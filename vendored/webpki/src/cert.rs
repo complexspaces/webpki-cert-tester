@@ -14,11 +14,13 @@
 
 use crate::{der, signed_data, Error};
 
+#[derive(Debug)]
 pub enum EndEntityOrCa<'a> {
     EndEntity,
     Ca(&'a Cert<'a>),
 }
 
+#[derive(Debug)]
 pub struct Cert<'a> {
     pub ee_or_ca: EndEntityOrCa<'a>,
 
@@ -59,10 +61,10 @@ pub(crate) fn parse_cert_internal<'a>(
     })?;
 
     tbs.read_all(Error::BadDer, |tbs| {
-        version3(tbs)?;
-        serial_number(tbs)?;
+        version3(tbs).expect("bad version number");
+        serial_number(tbs).expect("bad serial number");
 
-        let signature = der::expect_tag_and_get_value(tbs, der::Tag::Sequence)?;
+        let signature = der::expect_tag_and_get_value(tbs, der::Tag::Sequence).expect("bad signature");
         // TODO: In mozilla::pkix, the comparison is done based on the
         // normalized value (ignoring whether or not there is an optional NULL
         // parameter for RSA-based algorithms), so this may be too strict.
@@ -70,10 +72,10 @@ pub(crate) fn parse_cert_internal<'a>(
             return Err(Error::SignatureAlgorithmMismatch);
         }
 
-        let issuer = der::expect_tag_and_get_value(tbs, der::Tag::Sequence)?;
-        let validity = der::expect_tag_and_get_value(tbs, der::Tag::Sequence)?;
-        let subject = der::expect_tag_and_get_value(tbs, der::Tag::Sequence)?;
-        let spki = der::expect_tag(tbs, der::Tag::Sequence)?;
+        let issuer = der::expect_tag_and_get_value(tbs, der::Tag::Sequence).expect("bad issuer");
+        let validity = der::expect_tag_and_get_value(tbs, der::Tag::Sequence).expect("bad validity");
+        let subject = der::expect_tag_and_get_value(tbs, der::Tag::Sequence).expect("bad subject");
+        let spki = der::expect_tag(tbs, der::Tag::Sequence).expect("bad spki");
 
         // In theory there could be fields [1] issuerUniqueID and [2]
         // subjectUniqueID, but in practice there never are, and to keep the
@@ -112,10 +114,10 @@ pub(crate) fn parse_cert_internal<'a>(
                     der::Tag::Sequence,
                     Error::BadDer,
                     |extension| {
-                        let extn_id = der::expect_tag_and_get_value(extension, der::Tag::OID)?;
-                        let critical = der::optional_boolean(extension)?;
+                        let extn_id = der::expect_tag_and_get_value(extension, der::Tag::OID).expect("bad extn_id");
+                        let critical = der::optional_boolean(extension).expect("bad critical");
                         let extn_value =
-                            der::expect_tag_and_get_value(extension, der::Tag::OctetString)?;
+                            der::expect_tag_and_get_value(extension, der::Tag::OctetString).expect("bad extn_value");
                         match remember_extension(&mut cert, extn_id, extn_value)? {
                             Understood::No if critical => Err(Error::UnsupportedCriticalExtension),
                             _ => Ok(()),
@@ -152,9 +154,10 @@ pub fn certificate_serial_number(input: &mut untrusted::Reader) -> Result<(), Er
     // * Conforming CAs MUST NOT use serialNumber values longer than 20 octets."
     // * "The serial number MUST be a positive integer [...]"
 
-    let value = der::positive_integer(input)?;
-    if value.big_endian_without_leading_zero().len() > 20 {
-        return Err(Error::BadDer);
+    let value = der::positive_integer(input).expect("bad version integer");
+    let value_len = value.big_endian_without_leading_zero().len();
+    if value_len > 20 {
+        panic!("Cert serial too long! Expected <= 20 octects but it was {} instead", value_len)
     }
     Ok(())
 }

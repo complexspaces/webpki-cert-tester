@@ -138,7 +138,7 @@ fn nonnegative_integer<'a>(
         input.read_all(error::Unspecified, |input| {
             let first_byte = input.read_byte()?;
             if input.at_end() && first_byte < min_value {
-                return Err(error::Unspecified);
+                panic!("value did not reach minimum")
             }
             let _ = input.read_bytes_to_end();
             Ok(())
@@ -149,12 +149,13 @@ fn nonnegative_integer<'a>(
 
     value.read_all(error::Unspecified, |input| {
         // Empty encodings are not allowed.
-        let first_byte = input.read_byte()?;
+        let first_byte = input.read_byte().expect("failed to read first byte");
 
         if first_byte == 0 {
             if input.at_end() {
                 // |value| is the legal encoding of zero.
                 if min_value > 0 {
+                    panic!("mimimum value was greater than zero");
                     return Err(error::Unspecified);
                 }
                 return Ok(value);
@@ -162,10 +163,11 @@ fn nonnegative_integer<'a>(
 
             let r = input.read_bytes_to_end();
             r.read_all(error::Unspecified, |input| {
-                let second_byte = input.read_byte()?;
+                let second_byte = input.read_byte().expect("failed to read second byte");
                 if (second_byte & 0x80) == 0 {
                     // A leading zero is only allowed when the value's high bit
                     // is set.
+                    panic!("leading zero in wrong place");
                     return Err(error::Unspecified);
                 }
                 let _ = input.read_bytes_to_end();
@@ -177,6 +179,7 @@ fn nonnegative_integer<'a>(
 
         // Negative values are not allowed.
         if (first_byte & 0x80) != 0 {
+            panic!("negitive integer found");
             return Err(error::Unspecified);
         }
 
@@ -203,7 +206,7 @@ pub fn positive_integer<'a>(
     input: &mut untrusted::Reader<'a>,
 ) -> Result<Positive<'a>, error::Unspecified> {
     Ok(Positive::new_non_empty_without_leading_zeros(
-        nonnegative_integer(input, 1)?,
+        nonnegative_integer(input, 1)?
     ))
 }
 

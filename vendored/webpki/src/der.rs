@@ -26,6 +26,7 @@ pub fn expect_tag_and_get_value<'a>(
     ring::io::der::expect_tag_and_get_value(input, tag).map_err(|_| Error::BadDer)
 }
 
+#[derive(Debug)]
 pub struct Value<'a> {
     value: untrusted::Input<'a>,
 }

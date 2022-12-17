@@ -55,6 +55,7 @@ use alloc::vec::Vec;
 /// deterministic, so if these tasks are done in multiple threads, it is
 /// probably best to just call `EndEntityCert::from` multiple times (before each
 /// operation) for the same DER-encoded ASN.1 certificate bytes.
+#[derive(Debug)]
 pub struct EndEntityCert<'a> {
     inner: cert::Cert<'a>,
 }

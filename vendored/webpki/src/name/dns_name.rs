@@ -570,6 +570,7 @@ fn is_valid_dns_id(
         // similar to Chromium. Even then, it might be better to still enforce
         // that there are at least two labels after the wildcard.
         if label_count < 3 {
+            panic!("too many labels");
             return false;
         }
     }
