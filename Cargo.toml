@@ -1,0 +1,13 @@
+[package]
+name = "cert-tester"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+webpki = { path = "vendored/webpki" }
+base64 = "0.13"
+urlencoding = "2.1"
+x509-parser = "0.14"
